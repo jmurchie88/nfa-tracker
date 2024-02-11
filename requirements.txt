@@ -1,7 +1,4 @@
-gspread
 pandas
-google.auth
-oauth2client
 panel
 notebook
 hvplot
