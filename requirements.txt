@@ -1,5 +1,5 @@
 pandas
-panel == 1.2.3
+panel
 notebook
 hvplot
-bokeh == 3.0.3
+bokeh
