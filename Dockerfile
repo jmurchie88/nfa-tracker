@@ -1,5 +1,6 @@
 # Use the official lightweight Python image.
 # https://hub.docker.com/_/python
+ARG CLOUD_BUILD_BUILDS_LOG=CLOUD_LOGGING_ONLY
 FROM python:3.10-slim
 
 # Allow statements and log messages to immediately appear in the Knative logs
