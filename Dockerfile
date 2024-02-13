@@ -4,7 +4,7 @@ FROM python:3.10-slim
 
 # Allow statements and log messages to immediately appear in the Knative logs
 ENV PYTHONUNBUFFERED True
-ENV LOGGINGMODE="None"
+ENV CLOUD_BUILD_LOGGING=NONE
 
 # Copy local code to the container image.
 ENV APP_HOME /app
