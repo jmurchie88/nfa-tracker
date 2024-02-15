@@ -13,5 +13,8 @@ COPY . ./
 # Install production dependencies.
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Grab our data for building the container
+RUN python fetch_data.py
+
 # Run the web service on container startup.
 CMD panel serve nfa-tracker.ipynb --address 0.0.0.0 --port 8080 --allow-websocket-origin="*"
