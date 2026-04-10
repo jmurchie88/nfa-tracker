@@ -13,7 +13,7 @@ def fetch_google_sheet_csv(url):
 def csv_to_dataframe(csv_data):
     if csv_data is not None:
         data_io = StringIO(csv_data)
-        dataframe = pd.read_csv(data_io,index_col=False,header=1)
+        dataframe = pd.read_csv(data_io,index_col=False,header=0)
         return dataframe
     else:
         sys.exit("Unable to load CSV data to dataframe")
@@ -50,4 +50,6 @@ grouped = df.groupby(["Form Type","Registrant"])
 df['Median Wait'] = grouped["Wait Time"].transform(lambda x: x.rolling(window='60d').median())
 df['Median Wait'] = df.apply(lambda row: row['Wait Time'] if pd.isnull(row['Median Wait']) else row['Median Wait'], axis=1)
 
-df.to_pickle('./dataframe.pkl')
+df.reset_index(inplace=True)
+df['Approved Date'] = df['Approved Date'].dt.strftime('%Y-%m-%d')
+df.to_json('./frontend/public/data.json', orient='records')

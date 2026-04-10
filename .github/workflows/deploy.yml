@@ -1,0 +1,63 @@
+name: Build and Deploy Tracker
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    - cron: '0 0 * * *' # Midnight every day to pull latest CSV
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build_data_and_site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: |
+          pip install pandas requests
+
+      - name: Fetch Data
+        run: |
+          # Creates data.json inside frontend/public
+          python service/fetch_data.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build React App
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build -- --base=/nfa-tracker/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './frontend/dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

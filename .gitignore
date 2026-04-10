@@ -1,1 +1,25 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
 
+# Vite/Build
+dist/
+dist-ssr/
+*.local
+
+# Data (Since we fetch this nightly via Actions, we don't necessarily need to commit it, 
+# though for GitHub Pages we might want it. However, node_modules is the main culprit here.)
+# frontend/public/data.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
