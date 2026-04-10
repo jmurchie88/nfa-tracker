@@ -6,7 +6,7 @@ on:
       - main
       - master
   schedule:
-    - cron: '0 0 * * *' # Midnight every day to pull latest CSV
+    - cron: '0 7 * * *' # 1am CT every day to pull latest CSV
   workflow_dispatch:
 
 permissions:
