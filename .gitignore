@@ -10,9 +10,12 @@ dist/
 dist-ssr/
 *.local
 
-# Data (Since we fetch this nightly via Actions, we don't necessarily need to commit it, 
-# though for GitHub Pages we might want it. However, node_modules is the main culprit here.)
-# frontend/public/data.json
+# Data (Generated nightly via GitHub Actions)
+frontend/public/data.json
+frontend/public/overview.json
+frontend/public/trends.json
+frontend/public/map_data.json
+frontend/public/detailed/
 
 # IDE
 .vscode/
