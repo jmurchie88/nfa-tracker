@@ -4,8 +4,12 @@ import { Calendar, Activity, FileText, TrendingUp, TrendingDown, Minus, Heart } 
 import MapPanel from './MapPanel';
 
 export default function App() {
-  const [data, setData] = useState([]);
+  const [overviewRaw, setOverviewRaw] = useState([]);
+  const [trendsRaw, setTrendsRaw] = useState(null);
+  const [detailedDataRaw, setDetailedDataRaw] = useState([]);
+  
   const [loading, setLoading] = useState(true);
+  const [detailedLoading, setDetailedLoading] = useState(false);
   
   // Controls
   const [overviewRegistrant, setOverviewRegistrant] = useState('Individual');
@@ -17,6 +21,12 @@ export default function App() {
   const [useLogScale, setUseLogScale] = useState(true);
   const [trendWindow, setTrendWindow] = useState('60');
   const [formTypes, setFormTypes] = useState([]);
+  const [stats, setStats] = useState({ total: 0, latest: '' });
+
+  const sanitize = (name) => {
+    if (!name) return '';
+    return name.replace(/ /g, '_').replace(/-/g, '_').replace(/\//g, '_').replace(/\(/g, '').replace(/\)/g, '');
+  };
   
   // Legend interaction
   const [hiddenSeries, setHiddenSeries] = useState({});
@@ -50,38 +60,60 @@ export default function App() {
   };
   
   useEffect(() => {
-    fetch('/data.json')
-      .then(res => res.json())
-      .then(json => {
-         const sorted = json.sort((a,b) => new Date(a['Approved Date']) - new Date(b['Approved Date']));
-         setData(sorted);
-         
-         const types = [...new Set(sorted.map(item => item['Form Type']))].filter(Boolean).sort();
-         setFormTypes(types);
-         if(types.length > 0) {
-           setDetailedFormType(types.find(t => t.includes('Form 1 - EFile')) || types[0]);
-         }
-         
-         setLoading(false);
-      })
-      .catch(err => {
-         console.error('Failed to load data:', err);
-         setLoading(false);
-      });
+    Promise.all([
+      fetch('/overview.json').then(r => r.json()),
+      fetch('/trends.json').then(r => r.json())
+    ]).then(([overview, trends]) => {
+      setOverviewRaw(overview);
+      setTrendsRaw(trends);
+      
+      const types = [...new Set(overview.map(item => item['Form Type']))].filter(Boolean).sort();
+      setFormTypes(types);
+      if(types.length > 0) {
+        setDetailedFormType(types.find(t => t.includes('Form 1 - EFile')) || types[0]);
+      }
+      
+      const latest = overview.length > 0 ? overview[overview.length-1]['Approved Date'] : '';
+      setStats({ total: 11049, latest }); // Total hardcoded for now or we could sum up
+      
+      setLoading(false);
+    }).catch(err => {
+      console.error('Failed to load initial data:', err);
+      setLoading(false);
+    });
   }, []);
 
-  const overviewData = useMemo(() => {
-    if (!data.length) return [];
+  useEffect(() => {
+    if (!detailedFormType || !detailedRegistrant) return;
     
-    let filteredData = data;
+    setDetailedLoading(true);
+    const filename = `${sanitize(detailedFormType)}_${sanitize(detailedRegistrant)}.json`;
+    
+    fetch(`/detailed/${filename}`)
+      .then(r => r.json())
+      .then(json => {
+         setDetailedDataRaw(json);
+         setDetailedLoading(false);
+      })
+      .catch(err => {
+         console.error('Failed to load detailed data:', err);
+         setDetailedDataRaw([]);
+         setDetailedLoading(false);
+      });
+  }, [detailedFormType, detailedRegistrant]);
+
+  const overviewData = useMemo(() => {
+    if (!overviewRaw.length) return [];
+    
+    let filteredData = overviewRaw;
     if (timeFilter !== 'All') {
-       const latestDate = new Date(data[data.length - 1]['Approved Date']);
+       const latestDate = new Date(overviewRaw[overviewRaw.length - 1]['Approved Date']);
        const cutoffDate = new Date(latestDate);
        if (timeFilter === '1Y') cutoffDate.setMonth(cutoffDate.getMonth() - 12);
        else if (timeFilter === '6M') cutoffDate.setMonth(cutoffDate.getMonth() - 6);
        else if (timeFilter === '3M') cutoffDate.setMonth(cutoffDate.getMonth() - 3);
        
-       filteredData = data.filter(d => new Date(d['Approved Date']) >= cutoffDate);
+       filteredData = overviewRaw.filter(d => new Date(d['Approved Date']) >= cutoffDate);
     }
     
     const filtered = filteredData.filter(d => d.Registrant === overviewRegistrant);
@@ -96,85 +128,40 @@ export default function App() {
     });
     
     return Object.values(groupedByDate).sort((a,b) => new Date(a.date) - new Date(b.date));
-  }, [data, overviewRegistrant, timeFilter, trendWindow]);
+  }, [overviewRaw, overviewRegistrant, timeFilter, trendWindow]);
   
   const detailedData = useMemo(() => {
-    if (!data.length) return [];
+    if (!detailedDataRaw.length) return [];
     
-    let filteredData = data;
+    let filteredData = detailedDataRaw;
     if (detailedTimeFilter !== 'All') {
-       const latestDate = new Date(data[data.length - 1]['Approved Date']);
+       const latestDate = new Date(detailedDataRaw[detailedDataRaw.length - 1]['Approved Date']);
        const cutoffDate = new Date(latestDate);
        if (detailedTimeFilter === '1Y') cutoffDate.setMonth(cutoffDate.getMonth() - 12);
        else if (detailedTimeFilter === '6M') cutoffDate.setMonth(cutoffDate.getMonth() - 6);
        else if (detailedTimeFilter === '3M') cutoffDate.setMonth(cutoffDate.getMonth() - 3);
        
-       filteredData = data.filter(d => new Date(d['Approved Date']) >= cutoffDate);
+       filteredData = detailedDataRaw.filter(d => new Date(d['Approved Date']) >= cutoffDate);
     }
     
-    const baseData = filteredData.filter(d => 
-      d['Form Type'] === detailedFormType && 
-      d.Registrant === detailedRegistrant
-    );
-    
-    const dailyWaits = {};
-    baseData.forEach(d => {
-       const dt = d['Approved Date'];
-       if(!dailyWaits[dt]) dailyWaits[dt] = [];
-       dailyWaits[dt].push(d['Wait Time']);
-    });
-    
-    const dailyStdDev = {};
-    for (const dt in dailyWaits) {
-       const waits = dailyWaits[dt];
-       if (waits.length <= 1) {
-           dailyStdDev[dt] = 0;
-       } else {
-           const mean = waits.reduce((a,b) => a+b, 0) / waits.length;
-           const variance = waits.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / (waits.length - 1);
-           dailyStdDev[dt] = Math.sqrt(variance);
-       }
-    }
-
-    return baseData.map(d => ({
+    return filteredData.map(d => ({
        date: d['Approved Date'],
        timestamp: new Date(d['Approved Date']).getTime(),
        'Wait Time': Math.max(1, d['Wait Time']),
        'Median Wait': Math.max(1, d[`Median Wait ${trendWindow}`]),
-       'Std Dev': dailyStdDev[d['Approved Date']].toFixed(1)
+       'Std Dev': d['Std Dev']
     })).sort((a,b) => a.timestamp - b.timestamp);
-  }, [data, detailedFormType, detailedRegistrant, detailedTimeFilter, trendWindow]);
+  }, [detailedDataRaw, detailedTimeFilter, trendWindow]);
 
   const trendCardsData = useMemo(() => {
-    if (!data.length || !formTypes.length) return [];
+    if (!trendsRaw || !formTypes.length) return [];
     
+    const activeTrends = trendsRaw[overviewRegistrant] || {};
     return formTypes.map(ft => {
-      const ftData = data.filter(d => d.Registrant === overviewRegistrant && d['Form Type'] === ft);
-      if (ftData.length === 0) return { formType: ft, current: 0, trend: 'steady' };
-      
-      const latestObj = ftData[ftData.length - 1];
-      const latestDate = new Date(latestObj['Approved Date']);
-      
-      const t30 = new Date(latestDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const t60 = new Date(latestDate.getTime() - 60 * 24 * 60 * 60 * 1000);
-      
-      const last30 = ftData.filter(d => new Date(d['Approved Date']) >= t30);
-      const prev30 = ftData.filter(d => {
-         const dDate = new Date(d['Approved Date']);
-         return dDate >= t60 && dDate < t30;
-      });
-      
-      const currentMedian = last30.length > 0 ? (last30.reduce((s, x) => s + x[`Median Wait ${trendWindow}`], 0) / last30.length) : latestObj[`Median Wait ${trendWindow}`];
-      const pastMedian = prev30.length > 0 ? (prev30.reduce((s, x) => s + x[`Median Wait ${trendWindow}`], 0) / prev30.length) : currentMedian;
-      
-      const delta = currentMedian - pastMedian;
-      let trend = 'steady';
-      if (delta > 2) trend = 'up';
-      else if (delta < -2) trend = 'down';
-      
-      return { formType: ft, current: Math.round(currentMedian), trend, delta };
+      const stats = activeTrends[ft] ? activeTrends[ft][trendWindow] : { current: 0, trend: 'steady', delta: 0 };
+      return { formType: ft, ...stats };
     });
-  }, [data, formTypes, overviewRegistrant, trendWindow]);
+  }, [trendsRaw, formTypes, overviewRegistrant, trendWindow]);
 
   if (loading) {
      return <div className="loading-screen"><div className="spinner"></div><p>Aggregating NFA Data...</p></div>;
@@ -184,7 +171,7 @@ export default function App() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
-      const dailyItems = detailedData.filter(d => d.timestamp === label);
+      const dailyItems = detailedDataRaw.filter(d => new Date(d['Approved Date']).getTime() === label);
       let waitTimesString = '';
       if (dailyItems.length > 5) {
          const waits = dailyItems.map(item => item['Wait Time']).sort((a,b) => a - b);
@@ -231,12 +218,12 @@ export default function App() {
         <div className="stats-grid">
            <div className="glass-panel stat-card">
               <span className="stat-label">Total Submissions</span>
-              <span className="stat-value">{data.length.toLocaleString()}</span>
+              <span className="stat-value">{stats.total.toLocaleString()}</span>
               <span className="stat-sub"><Activity size={14}/> Live Data Array</span>
            </div>
            <div className="glass-panel stat-card" style={{borderTopColor: '#C62828'}}>
               <span className="stat-label">Latest Approval Logged</span>
-              <span className="stat-value">{data.length > 0 ? new Date(data[data.length-1]['Approved Date']).toLocaleDateString() : 'N/A'}</span>
+              <span className="stat-value">{stats.latest ? new Date(stats.latest).toLocaleDateString() : 'N/A'}</span>
               <span className="stat-sub"><Calendar size={14}/> Updated Nightly via Actions</span>
            </div>
            <div className="glass-panel stat-card" style={{borderTopColor: '#b8bb86'}}>
@@ -387,7 +374,8 @@ export default function App() {
                  </ResponsiveContainer>
              ) : (
                 <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#95a5a6'}}>
-                   No data available for the selected criteria.
+                {detailedLoading ? <div className="spinner"></div> : "No data available for the selected criteria."}
+                   
                 </div>
              )}
           </div>
@@ -398,7 +386,7 @@ export default function App() {
           )}
         </section>
         
-        <MapPanel data={data} />
+        <MapPanel />
       </main>
     </div>
   )

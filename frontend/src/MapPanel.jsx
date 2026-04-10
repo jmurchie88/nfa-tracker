@@ -1,41 +1,33 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { scaleLinear } from 'd3-scale';
-import { Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon, Loader2 } from 'lucide-react';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
-export default function MapPanel({ data }) {
+export default function MapPanel() {
+  const [stateData, setStateData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const stateData = useMemo(() => {
-    const agg = {};
-    data.forEach(item => {
-      const stateName = item.State;
-      if (!stateName || stateName.trim() === '') return;
-      if (!agg[stateName]) {
-        agg[stateName] = {
-          total: 0,
-          Suppressor: 0,
-          'Short Barreled Rifle': 0,
-          'Machine Gun': 0,
-          'Short Barreled Shotgun': 0,
-          'Destructive Device': 0,
-          'Any Other Weapon': 0
-        };
-      }
-      agg[stateName].total += 1;
-      const type = item['Type of NFA item'];
-      if (type && agg[stateName][type] !== undefined) {
-          agg[stateName][type] += 1;
-      }
-    });
-    return agg;
-  }, [data]);
+  useEffect(() => {
+    fetch('/map_data.json')
+      .then(res => res.json())
+      .then(json => {
+        setStateData(json);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load map data:', err);
+        setLoading(false);
+      });
+  }, []);
 
   const maxTotal = useMemo(() => {
-    return Math.max(1, ...Object.values(stateData).map(d => d.total));
+    const values = Object.values(stateData);
+    if (values.length === 0) return 1;
+    return Math.max(1, ...values.map(d => d.total));
   }, [stateData]);
 
   // Using a custom dark cyan/blue scale.
