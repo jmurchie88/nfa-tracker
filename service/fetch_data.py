@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from io import StringIO
 from datetime import date
+import sys
 
 def fetch_google_sheet_csv(url):
     response = requests.get(url)
