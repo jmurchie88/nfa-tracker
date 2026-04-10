@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Scatter, Brush } from 'recharts';
+import { LineChart, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Scatter, Brush } from 'recharts';
 import { Calendar, Activity, FileText, TrendingUp, TrendingDown, Minus, Heart } from 'lucide-react';
 import MapPanel from './MapPanel';
 
@@ -138,10 +138,11 @@ export default function App() {
 
     return baseData.map(d => ({
        date: d['Approved Date'],
+       timestamp: new Date(d['Approved Date']).getTime(),
        'Wait Time': Math.max(1, d['Wait Time']),
        'Median Wait': Math.max(1, d['Median Wait']),
        'Std Dev': dailyStdDev[d['Approved Date']].toFixed(1)
-    })).sort((a,b) => new Date(a.date) - new Date(b.date));
+    })).sort((a,b) => a.timestamp - b.timestamp);
   }, [data, detailedFormType, detailedRegistrant, detailedTimeFilter]);
 
   const trendCardsData = useMemo(() => {
@@ -182,12 +183,31 @@ export default function App() {
   const CustomDetailedTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      
+      const dailyItems = detailedData.filter(d => d.timestamp === label);
+      let waitTimesString = '';
+      if (dailyItems.length > 5) {
+         const waits = dailyItems.map(item => item['Wait Time']).sort((a,b) => a - b);
+         waitTimesString = `${waits[0]} - ${waits[waits.length-1]} days`;
+      } else if (dailyItems.length > 0) {
+         waitTimesString = dailyItems.map(item => item['Wait Time']).sort((a,b) => a - b).join(', ') + ' days';
+      } else {
+         waitTimesString = data['Wait Time'] + ' days';
+      }
+
       return (
         <div style={{ backgroundColor: 'rgba(11, 12, 16, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', zIndex: 1000, position: 'relative' }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#C62828' }}>{label}</p>
-          <p style={{ margin: '0 0 0.25rem 0', color: '#00d2ff' }}>60-Day Rolling Median: {data['Median Wait']} days</p>
-          <p style={{ margin: '0 0 0.25rem 0', color: 'rgba(255,255,255,0.7)' }}>Actual Wait: {data['Wait Time']} days</p>
-          <p style={{ margin: '0', color: '#b8bb86', fontWeight: 600 }}>Std Deviation: ±{data['Std Dev']} days</p>
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#C62828' }}>
+             {typeof label === 'number' ? new Date(label).toLocaleDateString() : label}
+          </p>
+          <p style={{ margin: '0 0 0.5rem 0', color: '#00d2ff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>60-Day Rolling Median: {data['Median Wait']} days</p>
+          <div style={{ margin: '0 0 0.25rem 0', color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem' }}>
+             <span style={{color: 'rgba(255,255,255,0.5)'}}>Approvals Logged:</span> {dailyItems.length > 0 ? dailyItems.length : 1}
+          </div>
+          <div style={{ margin: '0 0 0.25rem 0', color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem' }}>
+             <span style={{color: 'rgba(255,255,255,0.5)'}}>Wait Times:</span> {waitTimesString}
+          </div>
+          <p style={{ margin: '0.5rem 0 0 0', color: '#b8bb86', fontWeight: 600, fontSize: '0.85rem' }}>Daily Std Deviation: ±{data['Std Dev']} days</p>
         </div>
       );
     }
@@ -335,9 +355,9 @@ export default function App() {
           <div className="chart-wrapper">
              {detailedData.length > 0 ? (
                  <ResponsiveContainer width="100%" height="100%">
-                   <LineChart data={detailedData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                   <ComposedChart data={detailedData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                     <XAxis dataKey="date" stroke="#95a5a6" tick={{fill: '#95a5a6'}} tickMargin={10} minTickGap={30}/>
+                     <XAxis dataKey="timestamp" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(tick) => new Date(tick).toLocaleDateString()} stroke="#95a5a6" tick={{fill: '#95a5a6'}} tickMargin={10} minTickGap={30}/>
                      <YAxis 
                         stroke="#95a5a6" 
                         tick={{fill: '#95a5a6'}} 
@@ -347,13 +367,12 @@ export default function App() {
                      />
                      <Tooltip content={<CustomDetailedTooltip />} />
                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                     <Line type="monotone" name="Median Wait" dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                      
-                     {/* Using a scatter approach for individual points might be tricky in pure LineChart without ComposedChart, 
-                         so we render a secondary line with dots only and opacity for actual wait times */}
-                     <Line type="monotone" name="Actual Wait Time" dataKey="Wait Time" stroke="rgba(255,255,255,0.0)" strokeWidth={0} dot={{ r: 2, fill: 'rgba(255,255,255,0.3)', strokeWidth: 0 }} activeDot={false} connectNulls />
-                     <Brush dataKey="date" height={30} stroke="#C62828" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
-                   </LineChart>
+                     <Scatter name="Actual Wait Times" dataKey="Wait Time" fill="rgba(255,255,255,0.35)" />
+                     <Line type="monotone" name="60-Day Rolling Median" dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                     
+                     <Brush dataKey="timestamp" height={30} stroke="#C62828" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
+                   </ComposedChart>
                  </ResponsiveContainer>
              ) : (
                 <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#95a5a6'}}>
