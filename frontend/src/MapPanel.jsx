@@ -65,8 +65,8 @@ export default function MapPanel() {
       <div className="panel-header" style={{ marginBottom: '1rem' }}>
         <h2><MapIcon size={20} color="#00e676" /> NFA Submissions Heat Map <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(Crowdsourced Geographic Distribution)</span></h2>
       </div>
-      <div style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto' }}>
-        <ComposableMap projection="geoAlbersUsa" projectionConfig={{ scale: 1000 }} style={{ width: "100%", height: "auto" }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '900 / 600', overflow: 'hidden' }}>
+        <ComposableMap projection="geoAlbersUsa" projectionConfig={{ scale: 1000 }} style={{ width: "100%", height: "100%" }}>
           <Geographies geography={geoUrl}>
             {({ geographies }) =>
               geographies.map(geo => {
