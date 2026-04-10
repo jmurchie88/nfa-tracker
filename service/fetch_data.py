@@ -47,8 +47,14 @@ df.set_index('Approved Date', inplace=True,drop=True)
 df.sort_index(inplace=True)
 
 grouped = df.groupby(["Form Type","Registrant"])
-df['Median Wait'] = grouped["Wait Time"].transform(lambda x: x.rolling(window='60d').median())
-df['Median Wait'] = df.apply(lambda row: row['Wait Time'] if pd.isnull(row['Median Wait']) else row['Median Wait'], axis=1)
+df['Median Wait 30'] = grouped["Wait Time"].transform(lambda x: x.rolling(window='30d').median())
+df['Median Wait 60'] = grouped["Wait Time"].transform(lambda x: x.rolling(window='60d').median())
+df['Median Wait 90'] = grouped["Wait Time"].transform(lambda x: x.rolling(window='90d').median())
+
+# Handle NaN values mapping them to exact wait time fallback
+for win in [30, 60, 90]:
+    col = f'Median Wait {win}'
+    df[col] = df.apply(lambda row: row['Wait Time'] if pd.isnull(row[col]) else row[col], axis=1)
 
 df.reset_index(inplace=True)
 df['Approved Date'] = df['Approved Date'].dt.strftime('%Y-%m-%d')

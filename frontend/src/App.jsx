@@ -15,7 +15,7 @@ export default function App() {
   const [detailedRegistrant, setDetailedRegistrant] = useState('Individual');
   const [detailedTimeFilter, setDetailedTimeFilter] = useState('All');
   const [useLogScale, setUseLogScale] = useState(true);
-  
+  const [trendWindow, setTrendWindow] = useState('60');
   const [formTypes, setFormTypes] = useState([]);
   
   // Legend interaction
@@ -92,11 +92,11 @@ export default function App() {
       if (!groupedByDate[date]) {
          groupedByDate[date] = { date };
       }
-      groupedByDate[date][item['Form Type']] = Math.max(1, item['Median Wait']);
+      groupedByDate[date][item['Form Type']] = Math.max(1, item[`Median Wait ${trendWindow}`]);
     });
     
     return Object.values(groupedByDate).sort((a,b) => new Date(a.date) - new Date(b.date));
-  }, [data, overviewRegistrant, timeFilter]);
+  }, [data, overviewRegistrant, timeFilter, trendWindow]);
   
   const detailedData = useMemo(() => {
     if (!data.length) return [];
@@ -140,10 +140,10 @@ export default function App() {
        date: d['Approved Date'],
        timestamp: new Date(d['Approved Date']).getTime(),
        'Wait Time': Math.max(1, d['Wait Time']),
-       'Median Wait': Math.max(1, d['Median Wait']),
+       'Median Wait': Math.max(1, d[`Median Wait ${trendWindow}`]),
        'Std Dev': dailyStdDev[d['Approved Date']].toFixed(1)
     })).sort((a,b) => a.timestamp - b.timestamp);
-  }, [data, detailedFormType, detailedRegistrant, detailedTimeFilter]);
+  }, [data, detailedFormType, detailedRegistrant, detailedTimeFilter, trendWindow]);
 
   const trendCardsData = useMemo(() => {
     if (!data.length || !formTypes.length) return [];
@@ -164,8 +164,8 @@ export default function App() {
          return dDate >= t60 && dDate < t30;
       });
       
-      const currentMedian = last30.length > 0 ? (last30.reduce((s, x) => s + x['Median Wait'], 0) / last30.length) : latestObj['Median Wait'];
-      const pastMedian = prev30.length > 0 ? (prev30.reduce((s, x) => s + x['Median Wait'], 0) / prev30.length) : currentMedian;
+      const currentMedian = last30.length > 0 ? (last30.reduce((s, x) => s + x[`Median Wait ${trendWindow}`], 0) / last30.length) : latestObj[`Median Wait ${trendWindow}`];
+      const pastMedian = prev30.length > 0 ? (prev30.reduce((s, x) => s + x[`Median Wait ${trendWindow}`], 0) / prev30.length) : currentMedian;
       
       const delta = currentMedian - pastMedian;
       let trend = 'steady';
@@ -174,7 +174,7 @@ export default function App() {
       
       return { formType: ft, current: Math.round(currentMedian), trend, delta };
     });
-  }, [data, formTypes, overviewRegistrant]);
+  }, [data, formTypes, overviewRegistrant, trendWindow]);
 
   if (loading) {
      return <div className="loading-screen"><div className="spinner"></div><p>Aggregating NFA Data...</p></div>;
@@ -200,7 +200,7 @@ export default function App() {
           <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#C62828' }}>
              {typeof label === 'number' ? new Date(label).toLocaleDateString() : label}
           </p>
-          <p style={{ margin: '0 0 0.5rem 0', color: '#00d2ff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>60-Day Rolling Median: {data['Median Wait']} days</p>
+          <p style={{ margin: '0 0 0.5rem 0', color: '#00d2ff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>{trendWindow}-Day Rolling Median: {data['Median Wait']} days</p>
           <div style={{ margin: '0 0 0.25rem 0', color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem' }}>
              <span style={{color: 'rgba(255,255,255,0.5)'}}>Approvals Logged:</span> {dailyItems.length > 0 ? dailyItems.length : 1}
           </div>
@@ -221,12 +221,13 @@ export default function App() {
       <header className="app-header">
         <div className="header-title">
           <h1>NFA Approvals Dashboard</h1>
-          <p>Real-time scraped ATF approval tracking</p>
+          <p>User submitted ATF approval tracking</p>
         </div>
       </header>
 
       <main className="dashboard-container">
         
+
         <div className="stats-grid">
            <div className="glass-panel stat-card">
               <span className="stat-label">Total Submissions</span>
@@ -247,9 +248,17 @@ export default function App() {
            </div>
         </div>
 
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', alignItems: 'center' }} className="glass-panel">
+           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><Activity size={16} style={{display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px'}}/>Global Rolling Trend Window:</span>
+           <div className="toggle-container">
+               <button className={`toggle-btn ${trendWindow === '30' ? 'active' : ''}`} onClick={() => setTrendWindow('30')}>30 Day</button>
+               <button className={`toggle-btn ${trendWindow === '60' ? 'active' : ''}`} onClick={() => setTrendWindow('60')}>60 Day</button>
+               <button className={`toggle-btn ${trendWindow === '90' ? 'active' : ''}`} onClick={() => setTrendWindow('90')}>90 Day</button>
+           </div>
+        </div>
         <section className="glass-panel">
           <div className="panel-header" style={{ marginBottom: '1rem' }}>
-            <h2><Calendar size={20} color="#B0BEC5" /> Current Median Wait Times <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(in days, 60-Day Rolling Window)</span></h2>
+            <h2><Calendar size={20} color="#B0BEC5" /> Current Median Wait Times <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(in days, {trendWindow}-Day Rolling Window)</span></h2>
           </div>
           <div className="trend-cards-grid">
              {trendCardsData.map((tc, i) => (
@@ -268,7 +277,7 @@ export default function App() {
 
         <section className="glass-panel">
           <div className="panel-header" style={{flexWrap: 'wrap', gap: '1rem'}}>
-            <h2><Activity size={20} color="#00d2ff" /> Wait Times Overview by Form Type <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(60-Day Rolling Median)</span></h2>
+            <h2><Activity size={20} color="#00d2ff" /> Wait Times Overview by Form Type <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>({trendWindow}-Day Rolling Median)</span></h2>
             <div className="toggle-container" style={{ gap: '0.25rem' }}>
                <button className={`toggle-btn ${timeFilter === 'All' ? 'active' : ''}`} onClick={() => setTimeFilter('All')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>All Time</button>
                <button className={`toggle-btn ${timeFilter === '1Y' ? 'active' : ''}`} onClick={() => setTimeFilter('1Y')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>1Y</button>
@@ -325,7 +334,7 @@ export default function App() {
 
         <section className="glass-panel">
           <div className="panel-header" style={{flexWrap: 'wrap', gap: '1rem'}}>
-            <h2><FileText size={20} color="#C62828" /> Detailed Wait Time Analysis <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(60-Day Rolling Median)</span></h2>
+            <h2><FileText size={20} color="#C62828" /> Detailed Wait Time Analysis <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>({trendWindow}-Day Rolling Median)</span></h2>
             <div className="toggle-container" style={{ gap: '0.25rem' }}>
                <button className={`toggle-btn ${detailedTimeFilter === 'All' ? 'active' : ''}`} onClick={() => setDetailedTimeFilter('All')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>All Time</button>
                <button className={`toggle-btn ${detailedTimeFilter === '1Y' ? 'active' : ''}`} onClick={() => setDetailedTimeFilter('1Y')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>1Y</button>
@@ -369,7 +378,7 @@ export default function App() {
                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
                      
                      <Scatter name="Actual Wait Times" dataKey="Wait Time" fill="rgba(255,255,255,0.35)" />
-                     <Line type="monotone" name="60-Day Rolling Median" dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                     <Line type="monotone" name={`${trendWindow}-Day Rolling Median`} dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                      
                      <Brush dataKey="timestamp" height={30} stroke="#C62828" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
                    </ComposedChart>
