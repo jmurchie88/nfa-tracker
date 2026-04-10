@@ -295,16 +295,17 @@ export default function App() {
           </div>
           <div className="chart-wrapper">
              <ResponsiveContainer width="100%" height="100%">
-               <LineChart data={overviewData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                 <XAxis dataKey="date" stroke="#95a5a6" tick={{fill: '#95a5a6'}} tickMargin={10} minTickGap={30} />
-                 <YAxis 
-                    stroke="#95a5a6" 
-                    tick={{fill: '#95a5a6'}} 
-                    scale={useLogScale ? "log" : "auto"} 
-                    domain={useLogScale ? [1, 'auto'] : ['auto', 'auto']} 
-                    allowDataOverflow 
-                 />
+                <LineChart data={overviewData} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="date" stroke="#95a5a6" tick={{fill: '#95a5a6'}} tickMargin={10} minTickGap={30} />
+                  <YAxis 
+                     stroke="#95a5a6" 
+                     tick={{fill: '#95a5a6'}} 
+                     scale={useLogScale ? "log" : "auto"} 
+                     domain={useLogScale ? [1, 'auto'] : ['auto', 'auto']} 
+                     allowDataOverflow 
+                     label={{ value: 'Wait Time (Days)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#95a5a6', fontSize: '12px', fontWeight: 600 } }}
+                  />
                  <Tooltip 
                     contentStyle={{ backgroundColor: 'rgba(11, 12, 16, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#ecf0f1' }}
                     itemStyle={{ color: '#ecf0f1' }}
@@ -364,7 +365,7 @@ export default function App() {
           <div className="chart-wrapper">
              {detailedData.length > 0 ? (
                  <ResponsiveContainer width="100%" height="100%">
-                   <ComposedChart data={detailedData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                   <ComposedChart data={detailedData} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                      <XAxis dataKey="timestamp" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(tick) => new Date(tick).toLocaleDateString()} stroke="#95a5a6" tick={{fill: '#95a5a6'}} tickMargin={10} minTickGap={30}/>
                      <YAxis 
@@ -373,6 +374,7 @@ export default function App() {
                         scale={useLogScale ? "log" : "auto"} 
                         domain={useLogScale ? [1, 'auto'] : ['auto', 'auto']} 
                         allowDataOverflow 
+                        label={{ value: 'Wait Time (Days)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#95a5a6', fontSize: '12px', fontWeight: 600 } }}
                      />
                      <Tooltip content={<CustomDetailedTooltip />} />
                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
