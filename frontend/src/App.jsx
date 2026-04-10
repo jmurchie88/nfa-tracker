@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Scatter, Brush } from 'recharts';
 import { Calendar, Activity, FileText, TrendingUp, TrendingDown, Minus, Heart } from 'lucide-react';
+import MapPanel from './MapPanel';
 
 export default function App() {
   const [data, setData] = useState([]);
@@ -183,17 +184,17 @@ export default function App() {
       const data = payload[0].payload;
       return (
         <div style={{ backgroundColor: 'rgba(11, 12, 16, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', zIndex: 1000, position: 'relative' }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#ff9a9e' }}>{label}</p>
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#C62828' }}>{label}</p>
           <p style={{ margin: '0 0 0.25rem 0', color: '#00d2ff' }}>60-Day Rolling Median: {data['Median Wait']} days</p>
           <p style={{ margin: '0 0 0.25rem 0', color: 'rgba(255,255,255,0.7)' }}>Actual Wait: {data['Wait Time']} days</p>
-          <p style={{ margin: '0', color: '#a18cd1', fontWeight: 600 }}>Std Deviation: ±{data['Std Dev']} days</p>
+          <p style={{ margin: '0', color: '#b8bb86', fontWeight: 600 }}>Std Deviation: ±{data['Std Dev']} days</p>
         </div>
       );
     }
     return null;
   };
 
-  const colors = ['#00d2ff', '#00e676', '#ff9a9e', '#a18cd1', '#fbc2eb', '#fad0c4', '#ffecd2'];
+  const colors = ['#00d2ff', '#00e676', '#C62828', '#b8bb86', '#B0BEC5', '#F44336', '#FF5722'];
 
   return (
     <div className="animate-fade-in">
@@ -212,23 +213,23 @@ export default function App() {
               <span className="stat-value">{data.length.toLocaleString()}</span>
               <span className="stat-sub"><Activity size={14}/> Live Data Array</span>
            </div>
-           <div className="glass-panel stat-card" style={{borderTopColor: '#ff9a9e'}}>
+           <div className="glass-panel stat-card" style={{borderTopColor: '#C62828'}}>
               <span className="stat-label">Latest Approval Logged</span>
               <span className="stat-value">{data.length > 0 ? new Date(data[data.length-1]['Approved Date']).toLocaleDateString() : 'N/A'}</span>
               <span className="stat-sub"><Calendar size={14}/> Updated Nightly via Actions</span>
            </div>
-           <div className="glass-panel stat-card" style={{borderTopColor: '#a18cd1'}}>
+           <div className="glass-panel stat-card" style={{borderTopColor: '#b8bb86'}}>
               <span className="stat-label">Community Sourced</span>
               <span className="stat-value" style={{fontSize: '1.5rem', marginTop: '0.8rem'}}>Thank You!</span>
-              <span className="stat-sub" style={{color: '#a18cd1', fontWeight: 500, marginTop: 'auto', paddingTop: '0.5rem', display: 'flex', alignItems: 'center'}}>
-                 <Heart size={14} color="#a18cd1" style={{marginRight: '4px'}}/> <a href="https://thinlineweapons.com/" target="_blank" rel="noreferrer" style={{color: '#a18cd1', textDecoration: 'none', marginLeft: '4px'}}>ThinLineWeapons</a> &nbsp;&amp;&nbsp; <a href="https://www.reddit.com/r/NFA/" target="_blank" rel="noreferrer" style={{color: '#a18cd1', textDecoration: 'none'}}>r/NFA</a>
+              <span className="stat-sub" style={{color: '#b8bb86', fontWeight: 500, marginTop: 'auto', paddingTop: '0.5rem', display: 'flex', alignItems: 'center'}}>
+                 <Heart size={14} color="#b8bb86" style={{marginRight: '4px'}}/> <a href="https://thinlineweapons.com/" target="_blank" rel="noreferrer" style={{color: '#b8bb86', textDecoration: 'none', marginLeft: '4px'}}>ThinLineWeapons</a> &nbsp;&amp;&nbsp; <a href="https://www.reddit.com/r/NFA/" target="_blank" rel="noreferrer" style={{color: '#b8bb86', textDecoration: 'none'}}>r/NFA</a>
               </span>
            </div>
         </div>
 
         <section className="glass-panel">
           <div className="panel-header" style={{ marginBottom: '1rem' }}>
-            <h2><Calendar size={20} color="#fbc2eb" /> Current Median Wait Times <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(in days, 60-Day Rolling Window)</span></h2>
+            <h2><Calendar size={20} color="#B0BEC5" /> Current Median Wait Times <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(in days, 60-Day Rolling Window)</span></h2>
           </div>
           <div className="trend-cards-grid">
              {trendCardsData.map((tc, i) => (
@@ -297,11 +298,14 @@ export default function App() {
                </LineChart>
              </ResponsiveContainer>
           </div>
+          <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.4)', marginTop: '0.75rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <Activity size={14} style={{marginRight: '6px'}}/> Drag the timeline handles above to zoom into a custom date range
+          </div>
         </section>
 
         <section className="glass-panel">
           <div className="panel-header" style={{flexWrap: 'wrap', gap: '1rem'}}>
-            <h2><FileText size={20} color="#ff9a9e" /> Detailed Wait Time Analysis <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(60-Day Rolling Median)</span></h2>
+            <h2><FileText size={20} color="#C62828" /> Detailed Wait Time Analysis <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.5rem'}}>(60-Day Rolling Median)</span></h2>
             <div className="toggle-container" style={{ gap: '0.25rem' }}>
                <button className={`toggle-btn ${detailedTimeFilter === 'All' ? 'active' : ''}`} onClick={() => setDetailedTimeFilter('All')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>All Time</button>
                <button className={`toggle-btn ${detailedTimeFilter === '1Y' ? 'active' : ''}`} onClick={() => setDetailedTimeFilter('1Y')} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>1Y</button>
@@ -348,7 +352,7 @@ export default function App() {
                      {/* Using a scatter approach for individual points might be tricky in pure LineChart without ComposedChart, 
                          so we render a secondary line with dots only and opacity for actual wait times */}
                      <Line type="monotone" name="Actual Wait Time" dataKey="Wait Time" stroke="rgba(255,255,255,0.0)" strokeWidth={0} dot={{ r: 2, fill: 'rgba(255,255,255,0.3)', strokeWidth: 0 }} activeDot={false} connectNulls />
-                     <Brush dataKey="date" height={30} stroke="#ff9a9e" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
+                     <Brush dataKey="date" height={30} stroke="#C62828" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
                    </LineChart>
                  </ResponsiveContainer>
              ) : (
@@ -357,7 +361,14 @@ export default function App() {
                 </div>
              )}
           </div>
+          {detailedData.length > 0 && (
+             <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.4)', marginTop: '0.75rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Activity size={14} style={{marginRight: '6px'}}/> Drag the timeline handles above to zoom into a custom date range
+             </div>
+          )}
         </section>
+        
+        <MapPanel data={data} />
       </main>
     </div>
   )
