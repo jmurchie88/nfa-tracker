@@ -20,7 +20,6 @@
   "devDependencies": {
     "@fontsource/inter": "^5.2.8",
     "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.0.0",
-    "vite-plugin-css-injected-by-js": "^4.0.1"
+    "vite": "^5.0.0"
   }
 }
