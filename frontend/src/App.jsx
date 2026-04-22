@@ -5,6 +5,32 @@ const MapPanel = lazy(() => import('./MapPanel'));
 const DetailedAnalysis = lazy(() => import('./DetailedAnalysis'));
 const OverviewChart = lazy(() => import('./OverviewChart'));
 
+const LazyRender = ({ children, height = '400px' }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = React.useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        setIsVisible(true);
+        if (domRef.current) observer.unobserve(domRef.current);
+      }
+    }, { rootMargin: '200px' });
+    
+    if (domRef.current) observer.observe(domRef.current);
+    
+    return () => {
+      if (domRef.current) observer.unobserve(domRef.current);
+    };
+  }, []);
+
+  return (
+    <div ref={domRef} style={{ minHeight: height }}>
+      {isVisible ? children : null}
+    </div>
+  );
+};
+
 export default function App() {
   const [overviewRaw, setOverviewRaw] = useState([]);
   const [trendsRaw, setTrendsRaw] = useState(null);
@@ -229,17 +255,21 @@ export default function App() {
           </div>
         </section>
 
-        <Suspense fallback={<div className="glass-panel" style={{height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <Loader2 className="spinner" size={32} color="#00d2ff" />
-          </div>}>
-          <DetailedAnalysis formTypes={formTypes} trendWindow={trendWindow} />
-        </Suspense>
+        <LazyRender height="400px">
+          <Suspense fallback={<div className="glass-panel" style={{height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <Loader2 className="spinner" size={32} color="#00d2ff" />
+            </div>}>
+            <DetailedAnalysis formTypes={formTypes} trendWindow={trendWindow} />
+          </Suspense>
+        </LazyRender>
         
-        <Suspense fallback={<div className="glass-panel" style={{height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <Loader2 className="spinner" size={32} color="#00d2ff" />
-          </div>}>
-          <MapPanel />
-        </Suspense>
+        <LazyRender height="600px">
+          <Suspense fallback={<div className="glass-panel" style={{height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <Loader2 className="spinner" size={32} color="#00d2ff" />
+            </div>}>
+            <MapPanel />
+          </Suspense>
+        </LazyRender>
       </main>
     </div>
   )
