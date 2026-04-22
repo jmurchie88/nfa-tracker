@@ -143,8 +143,8 @@ const DetailedAnalysis = ({ formTypes, trendWindow }) => {
                  <Tooltip content={<CustomDetailedTooltip />} />
                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
                  
-                 <Scatter name="Actual Wait Times" dataKey="Wait Time" fill="rgba(255,255,255,0.35)" />
-                 <Line type="monotone" name={`${trendWindow}-Day Rolling Median`} dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                 <Scatter name="Actual Wait Times" dataKey="Wait Time" fill="rgba(255,255,255,0.35)" isAnimationActive={false} />
+                 <Line type="monotone" name={`${trendWindow}-Day Rolling Median`} dataKey="Median Wait" stroke="#00d2ff" strokeWidth={3} dot={false} activeDot={{ r: 6 }} isAnimationActive={false} />
                  
                  <Brush dataKey="timestamp" height={30} stroke="#C62828" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
                </ComposedChart>

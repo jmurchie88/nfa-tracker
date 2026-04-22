@@ -38,6 +38,7 @@ export default function OverviewChart({
              activeDot={!hiddenSeries[type] ? { r: 6 } : false}
              hide={hiddenSeries[type] === true}
              connectNulls
+             isAnimationActive={false}
            />
         ))}
         <Brush dataKey="date" height={30} stroke="#3a7bd5" fill="rgba(30, 31, 38, 0.5)" tickFormatter={() => ''} />
